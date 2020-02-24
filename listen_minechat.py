@@ -10,7 +10,7 @@ async def main(args):
     while True:
         try:
             reader, writer = await asyncio.open_connection(args.host, args.port)
-            await listen_chat(reader)
+            await listen_chat(reader, args.history)
         except TimeoutError:
             print('Нет соединения. Повторная попытка через 3 сек.')
             await asyncio.sleep(3)

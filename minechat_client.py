@@ -37,14 +37,14 @@ async def register(reader, writer, username):
     if username:
         await submit_message(writer, username)
     else:
-        username = input('nickname: ')
+        username = input('Введите имя пользователя для регистрации: ')
         await submit_message(writer, username)
     text = await readline(reader)
     try:
         json_data = json.loads(text)
         nickname = json_data['nickname']
         account_hash = json_data['account_hash']
-        print(f'Ваш итоговый никнейм : {nickname}, персоональный hash токен {account_hash} сохраните его!')
+        print(f'Ваш итоговый никнейм: {nickname}, персоональный hash токен: {account_hash} сохраните его!')
     except ValueError:
         print('Что-то пошло не так. Попробуйте перезапустить регистрацию.')
 
