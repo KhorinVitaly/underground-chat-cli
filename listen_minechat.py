@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-async def connection_holder(args):
+async def main(args):
     while True:
         try:
             reader, writer = await asyncio.open_connection(args.host, args.port)
@@ -44,9 +44,8 @@ if __name__ == '__main__':
     parser.add('--port', help='port for listening', env_var='MINECHAT_PORT_FOR_LISTENING')
     parser.add('--history', help='file to logging chat', env_var='MINECHAT_HISTORY')
     args = parser.parse_args()
-
     try:
-        asyncio.run(connection_holder(args))
+        asyncio.run(main(args))
     except KeyboardInterrupt:
         pass
 

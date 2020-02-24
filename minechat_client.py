@@ -11,14 +11,13 @@ async def main(args):
     await readline(reader)
     if args.token:
         await authorise(reader, writer, args.token)
-        await submit_message(writer, '')
-        print(await readline(reader))
+        await submit_message(writer)
+        await readline(reader)
         if args.message:
             await submit_message(writer, args.message)
         else:
             message = input('message: ')
             await submit_message(writer, message)
-        print(await readline(reader))
     else:
         await register(reader, writer, args.username)
 
@@ -28,13 +27,13 @@ async def authorise(reader, writer, token):
     text = await readline(reader)
     try:
         json_data = json.loads(text)
-    except Exception:
+    except ValueError:
         print('Неизвестный токен. Проверьте его или зарегистрируйтесь заново.')
 
 
 async def register(reader, writer, username):
     await submit_message(writer, '')
-    print(await readline(reader))
+    await readline(reader)
     if username:
         await submit_message(writer, username)
     else:
@@ -46,12 +45,13 @@ async def register(reader, writer, username):
         nickname = json_data['nickname']
         account_hash = json_data['account_hash']
         print(f'Ваш итоговый никнейм : {nickname}, персоональный hash токен {account_hash} сохраните его!')
-    except Exception:
-        print('Что-то пошло не так. Проверьте его или зарегистрируйтесь заново.')
+    except ValueError:
+        print('Что-то пошло не так. Попробуйте перезапустить регистрацию.')
 
 
 async def submit_message(writer, text=''):
     text += '\n\n'
+    logging.debug(f'Output: {text}')
     data = text.encode('utf-8')
     writer.write(data)
     await writer.drain()
@@ -60,6 +60,7 @@ async def submit_message(writer, text=''):
 async def readline(reader):
     data = await reader.readline()
     text = data.decode()
+    logging.debug(f'Input: {text}')
     return text
 
 
@@ -74,7 +75,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.log:
         logging.basicConfig(filename=args.log, level=logging.DEBUG)
-
     try:
         asyncio.run(main(args))
     except TimeoutError:
