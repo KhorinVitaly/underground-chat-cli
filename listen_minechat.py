@@ -40,9 +40,9 @@ async def write_to_file(filepath, text):
 
 if __name__ == '__main__':
     parser = configargparse.ArgParser()
-    parser.add('--host', help='host for listening', env_var='MINECHAT_HOST')
-    parser.add('--port', help='port for listening', env_var='MINECHAT_PORT_FOR_LISTENING')
-    parser.add('--history', help='file to logging chat', env_var='MINECHAT_HISTORY')
+    parser.add('--host', help='Адрес сервера minechat', env_var='MINECHAT_HOST')
+    parser.add('--port', help='Порт для прослушивания сообщений чата', env_var='MINECHAT_PORT_FOR_LISTENING')
+    parser.add('--history', help='Путь к фалу для логирования истории чата', env_var='MINECHAT_HISTORY')
     args = parser.parse_args()
     try:
         asyncio.run(main(args))

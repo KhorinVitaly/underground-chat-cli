@@ -2,8 +2,12 @@ import asyncio
 import configargparse
 import logging
 import json
+import bleach
 from dotenv import load_dotenv
 load_dotenv()
+
+
+SPECIAL_SYMBOLS_FOR_MARKING_END_OF_MESSAGE = '\n\n'
 
 
 async def main(args):
@@ -27,6 +31,8 @@ async def authorise(reader, writer, token):
     text = await readline(reader)
     try:
         json_data = json.loads(text)
+        nickname = json_data['nickname']
+        print(f'Вы авторизованы как: {nickname}')
     except ValueError:
         print('Неизвестный токен. Проверьте его или зарегистрируйтесь заново.')
 
@@ -44,14 +50,15 @@ async def register(reader, writer, username):
         json_data = json.loads(text)
         nickname = json_data['nickname']
         account_hash = json_data['account_hash']
-        print(f'Ваш итоговый никнейм: {nickname}, персоональный hash токен: {account_hash} сохраните его!')
+        print(f'Ваш итоговый никнейм: {nickname}, ваш персоональный hash токен: {account_hash} сохраните его!')
     except ValueError:
         print('Что-то пошло не так. Попробуйте перезапустить регистрацию.')
 
 
 async def submit_message(writer, text=''):
-    text += '\n\n'
     logging.debug(f'Output: {text}')
+    text = bleach.clean(text)
+    text += SPECIAL_SYMBOLS_FOR_MARKING_END_OF_MESSAGE
     data = text.encode('utf-8')
     writer.write(data)
     await writer.drain()
@@ -66,12 +73,12 @@ async def readline(reader):
 
 if __name__ == '__main__':
     parser = configargparse.ArgParser()
-    parser.add('--host', help='host for listening', env_var='MINECHAT_HOST')
-    parser.add('--port', help='port for listening', env_var='MINECHAT_PORT_FOR_WRITING')
-    parser.add('--log', help='file to logging input output', env_var='MINECHAT_LOG')
-    parser.add('--username', help='username in minechat', env_var='USERNAME')
-    parser.add('--token', help='personal hash token for auth', env_var='TOKEN')
-    parser.add('--message', help='default message text', env_var='MESSAGE')
+    parser.add('--host', help='Адрес сервера minechat', env_var='MINECHAT_HOST')
+    parser.add('--port', help='Порт для отправки сообщений', env_var='MINECHAT_PORT_FOR_WRITING')
+    parser.add('--log', help='Путь к файлу для логирования ввода / вывода', env_var='MINECHAT_LOG')
+    parser.add('--username', help='Имя пользователя по умолчанию', env_var='USERNAME')
+    parser.add('--token', help='Персоональный hash токен для авторизации', env_var='TOKEN')
+    parser.add('--message', help='Текст сообщения по умолчанию', env_var='MESSAGE')
     args = parser.parse_args()
     if args.log:
         logging.basicConfig(filename=args.log, level=logging.DEBUG)
