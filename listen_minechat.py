@@ -19,17 +19,14 @@ async def main(args):
 
 
 async def listen_chat(reader, history_file=None):
-    text = ''
     while True:
         data = await reader.readline()
-        text += data.decode()
-        if text:
+        if data:
             str_datetime = datetime.datetime.now().strftime("%d %m %Y %H:%M:%S")
-            message = f'{str_datetime} {text}'
+            message = f'{str_datetime} {data.decode()}'
             if history_file:
                 asyncio.create_task(write_to_file(history_file, message))
             print(message)
-            text = ''
         await asyncio.sleep(1)
 
 

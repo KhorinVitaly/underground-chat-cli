@@ -12,9 +12,15 @@ SPECIAL_SYMBOLS_FOR_MARKING_END_OF_MESSAGE = '\n\n'
 
 async def main(args):
     reader, writer = await asyncio.open_connection(args.host, args.port)
+    try:
+        pass
+    except Exception:
+        writer.close()
     await readline(reader)
     if args.token:
-        await authorise(reader, writer, args.token)
+        nickname = await authorise(reader, writer, args.token)
+        print(f'Вы авторизованы как: {nickname}')
+        print('Неизвестный токен. Проверьте его или зарегистрируйтесь заново.')
         await submit_message(writer)
         await readline(reader)
         if args.message:
@@ -23,7 +29,7 @@ async def main(args):
             message = input('message: ')
             await submit_message(writer, message)
     else:
-        await register(reader, writer, args.username)
+        nickname = await register(reader, writer, args.username)
 
 
 async def authorise(reader, writer, token):
@@ -31,10 +37,9 @@ async def authorise(reader, writer, token):
     text = await readline(reader)
     try:
         json_data = json.loads(text)
-        nickname = json_data['nickname']
-        print(f'Вы авторизованы как: {nickname}')
+        return json_data['nickname']
     except ValueError:
-        print('Неизвестный токен. Проверьте его или зарегистрируйтесь заново.')
+        return None
 
 
 async def register(reader, writer, username):
