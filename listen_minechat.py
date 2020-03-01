@@ -16,6 +16,8 @@ async def main(args):
             await asyncio.sleep(3)
         except ConnectionResetError:
             print('Разрыв соединения. Повторная попытка.')
+        finally:
+            writer.close()
 
 
 async def listen_chat(reader, history_file=None):

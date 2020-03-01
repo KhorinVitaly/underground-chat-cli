@@ -12,24 +12,33 @@ SPECIAL_SYMBOLS_FOR_MARKING_END_OF_MESSAGE = '\n\n'
 
 async def main(args):
     reader, writer = await asyncio.open_connection(args.host, args.port)
-    try:
-        pass
-    except Exception:
-        writer.close()
     await readline(reader)
-    if args.token:
-        nickname = await authorise(reader, writer, args.token)
-        print(f'Вы авторизованы как: {nickname}')
-        print('Неизвестный токен. Проверьте его или зарегистрируйтесь заново.')
+    try:
+
+
         await submit_message(writer)
         await readline(reader)
-        if args.message:
-            await submit_message(writer, args.message)
-        else:
+        if not args.message:
             message = input('message: ')
-            await submit_message(writer, message)
-    else:
-        nickname = await register(reader, writer, args.username)
+        await submit_message(writer, message)
+    finally:
+        writer.close()
+
+
+async def is_authenticated(args, reader, writer):
+    if not args.token:
+        nickname, account_hash = await register(reader, writer, args.username)
+        if not nickname:
+            print('Что-то пошло не так. Попробуйте перезапустить регистрацию.')
+            return
+        print(f'Ваш итоговый никнейм: {nickname}, ваш персоональный hash токен: {account_hash} сохраните его!')
+        return
+    nickname = await authorise(reader, writer, args.token)
+    if not nickname:
+        print('Неизвестный токен. Проверьте его или зарегистрируйтесь заново.')
+        return False
+    print(f'Вы авторизованы как: {nickname}')
+    return True
 
 
 async def authorise(reader, writer, token):
@@ -45,19 +54,15 @@ async def authorise(reader, writer, token):
 async def register(reader, writer, username):
     await submit_message(writer, '')
     await readline(reader)
-    if username:
-        await submit_message(writer, username)
-    else:
+    if not username:
         username = input('Введите имя пользователя для регистрации: ')
-        await submit_message(writer, username)
+    await submit_message(writer, username)
     text = await readline(reader)
     try:
         json_data = json.loads(text)
-        nickname = json_data['nickname']
-        account_hash = json_data['account_hash']
-        print(f'Ваш итоговый никнейм: {nickname}, ваш персоональный hash токен: {account_hash} сохраните его!')
+        return json_data['nickname'], json_data['account_hash']
     except ValueError:
-        print('Что-то пошло не так. Попробуйте перезапустить регистрацию.')
+        return None, None
 
 
 async def submit_message(writer, text=''):
