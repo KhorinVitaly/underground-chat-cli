@@ -2,7 +2,6 @@ import asyncio
 import configargparse
 import logging
 import json
-import bleach
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -12,33 +11,34 @@ SPECIAL_SYMBOLS_FOR_MARKING_END_OF_MESSAGE = '\n\n'
 
 async def main(args):
     reader, writer = await asyncio.open_connection(args.host, args.port)
-    await readline(reader)
     try:
-
-
-        await submit_message(writer)
-        await readline(reader)
-        if not args.message:
-            message = input('message: ')
-        await submit_message(writer, message)
+        await connect_to_chat(args, reader, writer)
     finally:
         writer.close()
 
 
-async def is_authenticated(args, reader, writer):
+async def connect_to_chat(args, reader, writer):
+    await readline(reader)
     if not args.token:
         nickname, account_hash = await register(reader, writer, args.username)
-        if not nickname:
+        if nickname:
+            print(f'Ваш итоговый никнейм: {nickname}, ваш персоональный hash токен: {account_hash} сохраните его!')
+        else:
             print('Что-то пошло не так. Попробуйте перезапустить регистрацию.')
-            return
-        print(f'Ваш итоговый никнейм: {nickname}, ваш персоональный hash токен: {account_hash} сохраните его!')
         return
+
     nickname = await authorise(reader, writer, args.token)
     if not nickname:
         print('Неизвестный токен. Проверьте его или зарегистрируйтесь заново.')
-        return False
+        return
     print(f'Вы авторизованы как: {nickname}')
-    return True
+
+    await submit_message(writer)
+    await readline(reader)
+    message = args.message
+    if not message:
+        message = input('message: ')
+    await submit_message(writer, message)
 
 
 async def authorise(reader, writer, token):
@@ -56,6 +56,7 @@ async def register(reader, writer, username):
     await readline(reader)
     if not username:
         username = input('Введите имя пользователя для регистрации: ')
+    username = await sanitize(username)
     await submit_message(writer, username)
     text = await readline(reader)
     try:
@@ -67,7 +68,7 @@ async def register(reader, writer, username):
 
 async def submit_message(writer, text=''):
     logging.debug(f'Output: {text}')
-    text = bleach.clean(text)
+    text = await sanitize(text)
     text += SPECIAL_SYMBOLS_FOR_MARKING_END_OF_MESSAGE
     data = text.encode('utf-8')
     writer.write(data)
@@ -79,6 +80,10 @@ async def readline(reader):
     text = data.decode()
     logging.debug(f'Input: {text}')
     return text
+
+
+async def sanitize(text):
+    return text.replace('\n', '\\n')
 
 
 if __name__ == '__main__':
