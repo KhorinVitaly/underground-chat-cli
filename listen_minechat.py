@@ -23,13 +23,13 @@ async def main(args):
 async def listen_chat(reader, history_file=None):
     while True:
         data = await reader.readline()
-        if data:
-            str_datetime = datetime.datetime.now().strftime("%d %m %Y %H:%M:%S")
-            message = f'{str_datetime} {data.decode()}'
-            if history_file:
-                asyncio.create_task(write_to_file(history_file, message))
-            print(message)
-        await asyncio.sleep(1)
+        if not data:
+            continue
+        str_datetime = datetime.datetime.now().strftime("%d %m %Y %H:%M:%S")
+        message = f'{str_datetime} {data.decode()}'
+        if history_file:
+            asyncio.create_task(write_to_file(history_file, message))
+        print(message)
 
 
 async def write_to_file(filepath, text):
